@@ -4,8 +4,9 @@
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::{FFTplanner, FFT};
-use std::sync::Arc;
 
+use sample::*;
+use std::sync::Arc;
 pub fn main() {
     const WINDOW: usize = 1024;
 
@@ -17,7 +18,14 @@ pub fn main() {
     let vad = VadFrame::new(&time_domain, &fft);
 
     println!("vad silence: {:?}", vad);
+
 }
+
+pub trait FFTable {}
+
+impl FFTable for f32 {}
+impl FFTable for f64 {}
+impl FFTable for usize {}
 
 
 #[derive(Debug)]
@@ -66,7 +74,7 @@ fn short_term_energy(time_domain: &[f32]) -> f32 {
 }
 
 fn peak_bin(frame: &[Complex<f32>]) -> usize {
-    let mut max_val = std::f32::MIN;
+    let mut max_val = frame[0].re;
     let mut max_bin = 0;
 
     for (bin, val) in frame.iter().enumerate() {
@@ -107,3 +115,39 @@ fn measure_spectral_flatness(fft: &[Complex<f32>]) -> f32 {
     10.0 * (geometric_mean(fft) / arithmetic_mean(fft)).log(10.0)
 }
 
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_silent_frame() {
+        const WINDOW: usize = 1024;
+
+        let time_domain: Vec<f32> = vec![0.0; WINDOW];
+
+        let mut planner = FFTplanner::new(false);
+        let fft = planner.plan_fft(WINDOW);
+
+        let _vad = VadFrame::new(&time_domain, &fft);
+    }
+
+    #[test]
+    fn test_sin() {
+        const WINDOW: usize = 512;
+        const SAMPLE_RATE: f64 = 16_000.0;
+
+        let hz = signal::rate(SAMPLE_RATE).const_hz(440.0);
+        let one_sec = SAMPLE_RATE as usize;
+        let wave: Vec<f32> = hz.clone().sine().take(one_sec).collect();
+        //            .map(|f| f.map(|s| s.to_sample::<f32>() * 0.2))
+        //            .collect();
+
+        let time_domain: Vec<f32> = vec![0.0; WINDOW];
+
+        let mut planner = FFTplanner::new(false);
+        let fft = planner.plan_fft(WINDOW);
+
+        let _vad = VadFrame::new(&time_domain, &fft);
+    }
+}

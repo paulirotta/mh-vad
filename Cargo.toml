@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 rustfft = "3.0.0"
+sample = "0.10.0"
