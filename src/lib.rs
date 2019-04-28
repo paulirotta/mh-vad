@@ -77,7 +77,7 @@ fn peak_bin(frame: &[Complex<f32>]) -> usize {
 }
 
 fn bin_to_freq(bin: usize, window_size: usize, sample_rate: f32) -> f32 {
-    (bin as f32 / window_size as f32) * sample_rate
+    (bin as f32 / window_size as f32 / 2.0) * sample_rate
 }
 
 fn geometric_mean(vec: &[Complex<f32>]) -> f32 {
@@ -101,7 +101,7 @@ fn arithmetic_mean(vec: &[Complex<f32>]) -> f32 {
 }
 
 pub fn spectral_flatness(fft: &[Complex<f32>]) -> f32 {
-    10.0 * (geometric_mean(fft) / arithmetic_mean(fft)).log(10.0)
+    (10.0 * (geometric_mean(fft) / arithmetic_mean(fft)).log(10.0)).max(0.0)
 }
 
 #[cfg(test)]
@@ -148,5 +148,19 @@ mod tests {
         let a_prime = geometric_mean(&a);
 
         assert_eq!(a_prime, g_mean);
+    }
+
+    #[test]
+    fn test_bin_to_freq() {
+        const SR: f32 = 44100.0;
+        const FRAME: usize = 1024;
+        let bandwith = SR / 2.0;
+        let fr = bandwith / FRAME as f32;
+        let bin = 20;
+        let f = bin as f32 * fr;
+
+        let f_calc = bin_to_freq(bin, FRAME, SR);
+
+        assert_eq!(f_calc, f);
     }
 }
