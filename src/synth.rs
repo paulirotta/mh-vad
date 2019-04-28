@@ -2,11 +2,9 @@ use portaudio as pa;
 use rustfft::FFTplanner;
 use sample::{signal, Frame, Sample, Signal, ToFrameSliceMut};
 
-use crate::vad::*;
-
 const CHANNELS: i32 = 1;
 const SAMPLE_RATE: f64 = 16_000.0;
-const FRAMES: u32 = 512;
+const FRAME: u32 = 512;
 
 pub fn play_synth() -> Result<(), pa::Error> {
     // Create a signal chain to play back 1 second of each oscillator at A4.
@@ -20,17 +18,17 @@ pub fn play_synth() -> Result<(), pa::Error> {
         .chain(hz.clone().square().take(one_sec))
         .chain(hz.clone().noise_simplex().take(one_sec))
         .chain(signal::noise(0).take(one_sec))
-        .map(|f| f.map(|s| s.to_sample::<f32>() * 0.2));
+        .map(|f| f.map(|s| s.to_sample::<f32>() * 0.5));
 
     // Initialise PortAudio.
     let pa = portaudio::PortAudio::new()?;
-    let settings = pa.default_output_stream_settings::<f32>(CHANNELS, SAMPLE_RATE, FRAMES)?;
+    let settings = pa.default_output_stream_settings::<f32>(CHANNELS, SAMPLE_RATE, FRAME)?;
 
     // Initialize VAD
-    let time_domain: Vec<f32> = vec![0.0; FRAMES as usize];
+    //    let time_domain: Vec<f32> = vec![0.0; FRAMES as usize];
 
     let mut planner = FFTplanner::new(false);
-    let fft = planner.plan_fft(FRAMES as usize);
+    let fft = planner.plan_fft(FRAME as usize);
 
     // Define the callback which provides PortAudio the audio.
     let callback = move |pa::OutputStreamCallbackArgs { buffer, .. }| {
@@ -42,7 +40,7 @@ pub fn play_synth() -> Result<(), pa::Error> {
             }
         }
 
-        let vad_frame = VadFrame::new(&buffer, &fft);
+        let vad_frame = ::mh_vad::VadFrame::new(&buffer, &fft);
 
         println!("{}", vad_frame);
         pa::Continue

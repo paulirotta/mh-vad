@@ -2,8 +2,12 @@
 
 use rustfft::FFTplanner;
 
+mod lib;
 mod synth;
-pub mod vad;
+
+const CHANNELS: i32 = 1;
+const SAMPLE_RATE: f64 = 16_000.0;
+const FRAME: u32 = 512;
 
 pub fn main() {
     const WINDOW: usize = 1024;
@@ -13,7 +17,7 @@ pub fn main() {
     let mut planner = FFTplanner::new(false);
     let fft = planner.plan_fft(WINDOW);
 
-    let vad = vad::VadFrame::new(&time_domain, &fft);
+    let vad = lib::VadFrame::new(&time_domain, &fft);
 
     println!("vad silence: {:?}", vad);
 
