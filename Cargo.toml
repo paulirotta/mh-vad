@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 rustfft = "3.0.0"
 sample = "0.10.0"
+portaudio = {git = "https://github.com/RustAudio/rust-portaudio.git", branch = "master"}
