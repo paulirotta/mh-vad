@@ -1,5 +1,4 @@
 use portaudio as pa;
-use rustfft::FFTplanner;
 use sample::{signal, Frame, Sample, Signal, ToFrameSliceMut};
 
 const CHANNELS: i32 = 1;
@@ -27,8 +26,7 @@ pub fn play_synth() -> Result<(), pa::Error> {
     // Initialize VAD
     //    let time_domain: Vec<f32> = vec![0.0; FRAMES as usize];
 
-    let mut planner = FFTplanner::new(false);
-    let fft = planner.plan_fft(FRAME as usize);
+    let vad = ::mh_vad::Vad::new(FRAME as usize);
 
     // Define the callback which provides PortAudio the audio.
     let callback = move |pa::OutputStreamCallbackArgs { buffer, .. }| {
@@ -40,7 +38,7 @@ pub fn play_synth() -> Result<(), pa::Error> {
             }
         }
 
-        let vad_frame = ::mh_vad::VadFrame::new(&buffer, &fft);
+        let vad_frame = ::mh_vad::VadFrame::new(&buffer, &vad);
 
         println!("{}", vad_frame);
         pa::Continue

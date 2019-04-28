@@ -1,9 +1,23 @@
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
-use rustfft::FFT;
+use rustfft::{FFTplanner, FFT};
 
 use std::fmt;
 use std::sync::Arc;
+
+pub struct Vad {
+    fft: Arc<FFT<f32>>,
+}
+
+impl Vad {
+    pub fn new(frame_size: usize) -> Vad {
+        let mut planner = FFTplanner::new(false);
+
+        Vad {
+            fft: planner.plan_fft(frame_size),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct VadFrame {
@@ -23,11 +37,11 @@ impl fmt::Display for VadFrame {
 }
 
 impl<'a> VadFrame {
-    pub fn new(time_domain: &'a [f32], fft: &Arc<FFT<f32>>) -> VadFrame {
+    pub fn new(time_domain: &'a [f32], vad: &Vad) -> VadFrame {
         const SAMPLE_RATE: f32 = 16_000.0;
 
         assert!(
-            time_domain.len() == fft.len(),
+            time_domain.len() == vad.fft.len(),
             "Time domain frame length must be the same size as FFT frame length"
         );
 
@@ -39,7 +53,7 @@ impl<'a> VadFrame {
         }
 
         let energy = short_term_energy(time_domain);
-        fft.process(&mut input, &mut output);
+        vad.fft.process(&mut input, &mut output);
         let dominant_freq = bin_to_freq(peak_bin(&output), time_domain.len(), SAMPLE_RATE);
         let spectral_flatness_measurement = spectral_flatness(&output);
 
